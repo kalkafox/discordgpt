@@ -4,4 +4,6 @@ RUN apk add make zlib-dev gcc g++ musl-dev
 WORKDIR /app
 COPY . .
 
+RUN chmod +x docker-entrypoint.sh
+
 CMD ["./docker-entrypoint.sh"]
