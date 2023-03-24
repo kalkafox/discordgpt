@@ -5,8 +5,6 @@ const env_variables = [
   'DISCORD_API_KEY',
   'OPENAI_API_KEY',
   'CLIENT_ID',
-  'GUILD_ID',
-  'THREAD_PARENT_ID',
 ]
 
 env_variables.forEach(variable => {
