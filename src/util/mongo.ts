@@ -1,7 +1,5 @@
 import { MongoClient } from 'mongodb'
 
-const url = 'mongodb://localhost:27017'
-
-const mongo_client = new MongoClient(url)
+const mongo_client = new MongoClient(process.env.MONGO_URL as string)
 
 export default mongo_client
