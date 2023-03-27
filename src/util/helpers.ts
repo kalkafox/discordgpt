@@ -51,14 +51,18 @@ export async function add_message(
 }
 
 export async function get_message(message_id: string) {
-  await mongo_connect()
-  const db = mongo_client.db('gpt-3')
-  const messages_db = db.collection('messages')
-  const result = await messages_db.findOne({
-    message_id,
-  })
-  await mongo_disconnect()
-  return result as WithId<DocumentMessage> | null
+  try {
+    await mongo_connect()
+    const db = mongo_client.db('gpt-3')
+    const messages_db = db.collection('messages')
+    const result = await messages_db.findOne({
+      message_id,
+    })
+    await mongo_disconnect()
+    return result as WithId<DocumentMessage> | null
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function update_message(
@@ -66,46 +70,59 @@ export async function update_message(
   messages: DbMessage[],
   new_message_id: string,
 ) {
-  await mongo_connect()
-  const db = mongo_client.db('gpt-3')
-  const messages_db = db.collection('messages')
-  await messages_db.updateOne(
-    {
-      message_id: old_message_id,
-    },
-    {
-      $push: {
-        messages: {
-          $each: messages,
+  try {
+    await mongo_connect()
+    const db = mongo_client.db('gpt-3')
+    const messages_db = db.collection('messages')
+    await messages_db.updateOne(
+      {
+        message_id: old_message_id,
+      },
+      {
+        $push: {
+          messages: {
+            $each: messages,
+          },
+        },
+        $set: {
+          message_id: new_message_id,
         },
       },
-      $set: {
-        message_id: new_message_id,
-      },
-    },
-  )
-  await mongo_disconnect()
+    )
+    await mongo_disconnect()
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function add_reply(id: string) {
-  await mongo_connect()
-  const db = mongo_client.db('gpt-3')
-  const being_replied_to = db.collection('being_replied_to')
-  await being_replied_to.insertOne({
-    message_id: id,
-  })
-  await mongo_disconnect()
+  try {
+    await mongo_connect()
+    const db = mongo_client.db('gpt-3')
+    const being_replied_to = db.collection('being_replied_to')
+    await being_replied_to.insertOne({
+      message_id: id,
+    })
+    await mongo_disconnect()
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function check_reply(id: string) {
-  await mongo_connect()
-  const db = mongo_client.db('gpt-3')
-  const being_replied_to = db.collection('being_replied_to')
-  const result = await being_replied_to.findOne({
-    message_id: id,
-  })
-  await mongo_disconnect()
-  return result
+  try {
+    await mongo_connect()
+    const db = mongo_client.db('gpt-3')
+    const being_replied_to = db.collection('being_replied_to')
+    const result = await being_replied_to.findOne({
+      message_id: id,
+    })
+    await mongo_disconnect()
+    return result
+  } catch (error) {
+    console.log(error)
+    return null
+  }
 }
 
 export async function delete_reply(id: string) {
