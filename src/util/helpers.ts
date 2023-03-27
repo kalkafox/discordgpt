@@ -126,13 +126,17 @@ export async function check_reply(id: string) {
 }
 
 export async function delete_reply(id: string) {
-  await mongo_connect()
-  const db = mongo_client.db('gpt-3')
-  const being_replied_to = db.collection('being_replied_to')
-  await being_replied_to.deleteOne({
-    message_id: id,
-  })
-  await mongo_disconnect()
+  try {
+    await mongo_connect()
+    const db = mongo_client.db('gpt-3')
+    const being_replied_to = db.collection('being_replied_to')
+    await being_replied_to.deleteOne({
+      message_id: id,
+    })
+    await mongo_disconnect()
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function chat_completion(
