@@ -1,2 +1,2 @@
 [phases.setup]
-nixPkgs = ['...', 'python3', 'zlib', 'musl']
+nixPkgs = ['...', 'python3', 'zlib', 'musl', 'gcc-wrapper']
