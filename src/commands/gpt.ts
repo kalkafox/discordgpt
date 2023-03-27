@@ -306,8 +306,14 @@ export async function execute(interaction: Interaction<CacheType>) {
     token_data = res_data.data.usage!
 
     const msg = await interaction.editReply({
-      content: message_content,
+      content: message_content.length < 2000 ? message_content : '',
       embeds: [token_embed(now, token_data)],
+      files: message_content.length > 2000 ? [
+        {
+          name: 'response.txt',
+          attachment: Buffer.from(message_content),
+        }
+      ] : undefined,
     })
 
     add_message(

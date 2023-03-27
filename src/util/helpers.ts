@@ -16,13 +16,29 @@ export const format_time = (time: number) => {
   return `${seconds_string} seconds`
 }
 
+async function mongo_connect() {
+  try {
+    await mongo_client.connect()
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+async function mongo_disconnect() {
+  try {
+    await mongo_client.close()
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 export async function add_message(
   username: string,
   messages: DbMessage[],
   message_id: string,
   raw: boolean = false,
 ) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const messages_db = db.collection('messages')
   await messages_db.insertOne({
@@ -31,17 +47,17 @@ export async function add_message(
     message_id,
     raw,
   })
-  await mongo_client.close()
+  await mongo_disconnect()
 }
 
 export async function get_message(message_id: string) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const messages_db = db.collection('messages')
   const result = await messages_db.findOne({
     message_id,
   })
-  await mongo_client.close()
+  await mongo_disconnect()
   return result as WithId<DocumentMessage> | null
 }
 
@@ -50,7 +66,7 @@ export async function update_message(
   messages: DbMessage[],
   new_message_id: string,
 ) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const messages_db = db.collection('messages')
   await messages_db.updateOne(
@@ -68,38 +84,38 @@ export async function update_message(
       },
     },
   )
-  await mongo_client.close()
+  await mongo_disconnect()
 }
 
 export async function add_reply(id: string) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const being_replied_to = db.collection('being_replied_to')
   await being_replied_to.insertOne({
     message_id: id,
   })
-  await mongo_client.close()
+  await mongo_disconnect()
 }
 
 export async function check_reply(id: string) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const being_replied_to = db.collection('being_replied_to')
   const result = await being_replied_to.findOne({
     message_id: id,
   })
-  await mongo_client.close()
+  await mongo_disconnect()
   return result
 }
 
 export async function delete_reply(id: string) {
-  await mongo_client.connect()
+  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const being_replied_to = db.collection('being_replied_to')
   await being_replied_to.deleteOne({
     message_id: id,
   })
-  await mongo_client.close()
+  await mongo_disconnect()
 }
 
 export async function chat_completion(
