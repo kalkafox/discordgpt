@@ -95,9 +95,17 @@ discord_client.on(Events.MessageCreate, async msg => {
 
       const embed = token_embed(now, token_data)
 
+      const gpt_msg = gpt_res.data.choices[0].message?.content!
+
       const bot_response = await msg.reply({
-        content: gpt_res.data.choices[0].message?.content!,
+        content: gpt_msg.length > 2000 ? ':pencil' : gpt_msg,
         embeds: [embed],
+        files: gpt_msg.length > 2000 ? [
+          {
+            name: 'response.txt',
+            attachment: Buffer.from(gpt_msg),
+          }
+        ] : undefined,
       })
 
       processing = false
@@ -197,6 +205,8 @@ export async function execute(interaction: Interaction<CacheType>) {
       content: prompt,
     })
   }
+
+  console.log(messages)
 
   const res_data = await chat_completion(interaction.user.id, messages, stream)
 
