@@ -160,8 +160,9 @@ export async function chat_completion(
 }
 
 export function prompt_context(now: Date) {
+  const tz = now.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
   return `The timestamp is ${now.toLocaleDateString()}, ${now.toLocaleTimeString()} ${
-    now.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
+    tz === undefined ? 'UTC' : tz
   }, you will treat it as the current date and time. There is no need to remind me that you are an AI language model. Whenever you generate code, wrap block with \`\`\`<language>\`\`\`, where <language> is the detected language. For example, \`\`\`js\`\`\``
 }
 
