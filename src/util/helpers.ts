@@ -159,7 +159,26 @@ export async function chat_completion(
   )
 }
 
-export function prompt_context(now: Date) {
+export async function prompt_context(now: Date, choice?: string | number | boolean | undefined) {
+
+  if (choice !== undefined) {
+    try {
+      await mongo_connect()
+      const prompt_collection = mongo_client.db('gpt-3').collection('prompts')
+      switch (choice) {
+        case 'jb':
+          return await prompt_collection.findOne({ prompt_id: 'jb' })
+        case 'uwu':
+          return await prompt_collection.findOne({ prompt_id: 'uwu' }) as WithId<DocumentPrompt>
+      }
+      await mongo_disconnect()
+    } catch(error) {
+      console.log(error)
+    }
+
+    return
+  }
+
   const tz = now.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
   return `The timestamp is ${now.toLocaleDateString()}, ${now.toLocaleTimeString()} ${
     tz === undefined ? 'UTC' : tz

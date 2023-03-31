@@ -16,3 +16,8 @@ type DocumentMessage = {
   message_id: string
   raw: boolean
 }
+
+type DocumentPrompt = {
+  prompt: string
+  prompt_id: string
+}
