@@ -6,8 +6,6 @@ import {
   check_reply,
   delete_reply,
   get_message,
-  mongo_connect,
-  mongo_disconnect,
   prompt_context,
   token_embed,
   update_message,
@@ -30,7 +28,6 @@ discord_client.on(Events.MessageCreate, async msg => {
     const reply = await msg.channel.messages.fetch(msg.reference.messageId)
 
     if (reply.author.id === discord_client.user?.id) {
-      await mongo_connect()
       const is_being_replied_to = await check_reply(reply.id)
 
       if (is_being_replied_to) {
@@ -141,8 +138,6 @@ discord_client.on(Events.MessageCreate, async msg => {
         ],
         bot_response.id,
       )
-
-      await mongo_disconnect()
     }
   }
 })
@@ -213,8 +208,6 @@ export async function execute(interaction: Interaction<CacheType>) {
   let raw = interaction.options.get('raw')?.value as boolean
   const prompt_choice = interaction.options.get('prompt')?.value
   const persona = interaction.options.get('persona')?.value as string
-
-  await mongo_connect()
 
   let prompt = (await prompt_context(now, prompt_choice)) as
     | WithId<DocumentPrompt>
@@ -463,6 +456,4 @@ export async function execute(interaction: Interaction<CacheType>) {
       msg.id,
     )
   }
-
-  await mongo_disconnect()
 }
