@@ -10,13 +10,19 @@ import {
   token_embed,
   update_message,
 } from '@/util/helpers'
-import { APIApplicationCommandOptionChoice, CacheType, Events, Interaction, SlashCommandBuilder } from 'discord.js'
+import {
+  APIApplicationCommandOptionChoice,
+  CacheType,
+  Events,
+  Interaction,
+  SlashCommandBuilder,
+} from 'discord.js'
 import { encode } from 'gpt-3-encoder'
 import { WithId } from 'mongodb'
 import { ChatCompletionRequestMessage } from 'openai'
 
 discord_client.on(Events.MessageCreate, async msg => {
-  if (msg.author.bot) return
+  if (msg.author.id === discord_client.user?.id) return
 
   if (msg.reference && msg.reference.messageId) {
     const reply = await msg.channel.messages.fetch(msg.reference.messageId)
@@ -99,14 +105,17 @@ discord_client.on(Events.MessageCreate, async msg => {
       const gpt_msg = gpt_res.data.choices[0].message?.content!
 
       const bot_response = await msg.reply({
-        content: gpt_msg.length > 2000 ? ':pencil' : gpt_msg,
+        content: gpt_msg.length > 2000 ? ':pencil:' : gpt_msg,
         embeds: [embed],
-        files: gpt_msg.length > 2000 ? [
-          {
-            name: 'response.txt',
-            attachment: Buffer.from(gpt_msg),
-          }
-        ] : undefined,
+        files:
+          gpt_msg.length > 2000
+            ? [
+                {
+                  name: 'response.txt',
+                  attachment: Buffer.from(gpt_msg),
+                },
+              ]
+            : undefined,
       })
 
       processing = false
@@ -141,7 +150,7 @@ const prompt_choices: APIApplicationCommandOptionChoice<string>[] = [
   {
     name: 'UwU',
     value: 'uwu',
-  }
+  },
 ]
 
 export const data = new SlashCommandBuilder()
@@ -173,18 +182,20 @@ export const data = new SlashCommandBuilder()
     option
       .setName('raw')
       .setDescription('Whether to send with a prompt or not.'),
-)
+  )
   .addStringOption(option =>
     option
       .setName('prompt')
       .setDescription('The prompt to send to the GPT-3 API')
-      .addChoices(...prompt_choices)
-)
+      .addChoices(...prompt_choices),
+  )
   .addStringOption(option =>
     option
       .setName('persona')
-      .setDescription('The persona name if using the \'uwu\' prompt. (Be specific! e.g Baine Bloodhoof)')
-)
+      .setDescription(
+        "The persona name if using the 'uwu' prompt. (Be specific! e.g Baine Bloodhoof)",
+      ),
+  )
 
 export async function execute(interaction: Interaction<CacheType>) {
   if (!interaction.isCommand()) return
@@ -198,12 +209,16 @@ export async function execute(interaction: Interaction<CacheType>) {
   const prompt_choice = interaction.options.get('prompt')?.value
   const persona = interaction.options.get('persona')?.value as string
 
-  let prompt = await prompt_context(now, prompt_choice) as WithId<DocumentPrompt> | undefined | string
+  let prompt = (await prompt_context(now, prompt_choice)) as
+    | WithId<DocumentPrompt>
+    | undefined
+    | string
 
   if (prompt_choice !== undefined) {
     if (prompt === undefined || prompt === null) {
       await interaction.reply({
-        content: 'There was an error while getting the prompt. Please try again later!',
+        content:
+          'There was an error while getting the prompt. Please try again later!',
         ephemeral: true,
       })
       return
@@ -215,26 +230,37 @@ export async function execute(interaction: Interaction<CacheType>) {
       case 'uwu':
         if (persona === undefined) {
           await interaction.reply({
-            content: 'You must specify a persona name when using the \'uwu\' prompt! (e.g Baine Bloodhoof)',
+            content:
+              "You must specify a persona name when using the 'uwu' prompt! (e.g Baine Bloodhoof)",
             ephemeral: true,
           })
           return
         }
         if (!persona.includes(' ')) {
           await interaction.reply({
-            content: 'You must specify a full persona name when using the \'uwu\' prompt! (e.g Baine Bloodhoof)',
+            content:
+              "You must specify a full persona name when using the 'uwu' prompt! (e.g Baine Bloodhoof)",
             ephemeral: true,
           })
           return
         }
         const full_name = persona.split(' ')
-        prompt.prompt = prompt.prompt.replaceAll('{FULL_NAME}', full_name.join(' '))
+        prompt.prompt = prompt.prompt.replaceAll(
+          '{FULL_NAME}',
+          full_name.join(' '),
+        )
         prompt.prompt = prompt.prompt.replaceAll('{FIRST_NAME}', full_name[0])
         break
     }
   }
 
-  const prompt_token_length = encode(`${prompt_choice !== undefined ? (prompt as WithId<DocumentPrompt>).prompt as string : prompt as string}${message}`).length
+  const prompt_token_length = encode(
+    `${
+      prompt_choice !== undefined
+        ? ((prompt as WithId<DocumentPrompt>).prompt as string)
+        : (prompt as string)
+    }${message}`,
+  ).length
 
   await interaction.deferReply({ ephemeral: ephemeral })
 
@@ -261,12 +287,14 @@ export async function execute(interaction: Interaction<CacheType>) {
   if (!raw || prompt_choice !== undefined) {
     messages.unshift({
       role: 'user',
-      content: prompt_choice !== undefined ? (prompt as WithId<DocumentPrompt>).prompt as string : prompt as string,
+      content:
+        prompt_choice !== undefined
+          ? ((prompt as WithId<DocumentPrompt>).prompt as string)
+          : (prompt as string),
     })
   }
 
-  if (prompt_choice !== undefined)
-    raw = true
+  if (prompt_choice !== undefined) raw = true
 
   console.log(messages)
 
@@ -306,10 +334,14 @@ export async function execute(interaction: Interaction<CacheType>) {
             [
               prompt_choice !== undefined
                 ? {
-                  username: interaction.user.username,
-                  role: 'user',
-                  content: prompt_choice !== undefined ? (prompt as WithId<DocumentPrompt>).prompt as string : prompt as string,
-                } : undefined,
+                    username: interaction.user.username,
+                    role: 'user',
+                    content:
+                      prompt_choice !== undefined
+                        ? ((prompt as WithId<DocumentPrompt>).prompt as string)
+                        : (prompt as string),
+                  }
+                : undefined,
               {
                 username: interaction.user.username,
                 role: 'user',
@@ -384,14 +416,17 @@ export async function execute(interaction: Interaction<CacheType>) {
     token_data = res_data.data.usage!
 
     const msg = await interaction.editReply({
-      content: message_content.length < 2000 ? message_content : '',
+      content: message_content.length < 2000 ? message_content : ':pencil:',
       embeds: [token_embed(now, token_data)],
-      files: message_content.length > 2000 ? [
-        {
-          name: 'response.txt',
-          attachment: Buffer.from(message_content),
-        }
-      ] : undefined,
+      files:
+        message_content.length > 2000
+          ? [
+              {
+                name: 'response.txt',
+                attachment: Buffer.from(message_content),
+              },
+            ]
+          : undefined,
     })
 
     add_message(
@@ -399,10 +434,14 @@ export async function execute(interaction: Interaction<CacheType>) {
       [
         prompt_choice !== undefined
           ? {
-            username: interaction.user.username,
-            role: 'user',
-            content: prompt_choice !== undefined ? (prompt as WithId<DocumentPrompt>).prompt as string : prompt as string,
-          } : undefined,
+              username: interaction.user.username,
+              role: 'user',
+              content:
+                prompt_choice !== undefined
+                  ? ((prompt as WithId<DocumentPrompt>).prompt as string)
+                  : (prompt as string),
+            }
+          : undefined,
         {
           username: interaction.user.username,
           role: 'user',
