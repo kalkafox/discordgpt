@@ -16,7 +16,7 @@ export const format_time = (time: number) => {
   return `${seconds_string} seconds`
 }
 
-async function mongo_connect() {
+export async function mongo_connect() {
   try {
     await mongo_client.connect()
   } catch (error) {
@@ -24,7 +24,7 @@ async function mongo_connect() {
   }
 }
 
-async function mongo_disconnect() {
+export async function mongo_disconnect() {
   try {
     await mongo_client.close()
   } catch (error) {
@@ -38,7 +38,6 @@ export async function add_message(
   message_id: string,
   raw: boolean = false,
 ) {
-  await mongo_connect()
   const db = mongo_client.db('gpt-3')
   const messages_db = db.collection('messages')
   await messages_db.insertOne({
@@ -47,18 +46,15 @@ export async function add_message(
     message_id,
     raw,
   })
-  await mongo_disconnect()
 }
 
 export async function get_message(message_id: string) {
   try {
-    await mongo_connect()
     const db = mongo_client.db('gpt-3')
     const messages_db = db.collection('messages')
     const result = await messages_db.findOne({
       message_id,
     })
-    await mongo_disconnect()
     return result as WithId<DocumentMessage> | null
   } catch (error) {
     console.log(error)
@@ -71,7 +67,6 @@ export async function update_message(
   new_message_id: string,
 ) {
   try {
-    await mongo_connect()
     const db = mongo_client.db('gpt-3')
     const messages_db = db.collection('messages')
     await messages_db.updateOne(
@@ -89,7 +84,6 @@ export async function update_message(
         },
       },
     )
-    await mongo_disconnect()
   } catch (error) {
     console.log(error)
   }
@@ -97,13 +91,11 @@ export async function update_message(
 
 export async function add_reply(id: string) {
   try {
-    await mongo_connect()
     const db = mongo_client.db('gpt-3')
     const being_replied_to = db.collection('being_replied_to')
     await being_replied_to.insertOne({
       message_id: id,
     })
-    await mongo_disconnect()
   } catch (error) {
     console.log(error)
   }
@@ -111,13 +103,11 @@ export async function add_reply(id: string) {
 
 export async function check_reply(id: string) {
   try {
-    await mongo_connect()
     const db = mongo_client.db('gpt-3')
     const being_replied_to = db.collection('being_replied_to')
     const result = await being_replied_to.findOne({
       message_id: id,
     })
-    await mongo_disconnect()
     return result
   } catch (error) {
     console.log(error)
@@ -127,13 +117,11 @@ export async function check_reply(id: string) {
 
 export async function delete_reply(id: string) {
   try {
-    await mongo_connect()
     const db = mongo_client.db('gpt-3')
     const being_replied_to = db.collection('being_replied_to')
     await being_replied_to.deleteOne({
       message_id: id,
     })
-    await mongo_disconnect()
   } catch (error) {
     console.log(error)
   }
@@ -159,27 +147,31 @@ export async function chat_completion(
   )
 }
 
-export async function prompt_context(now: Date, choice?: string | number | boolean | undefined) {
-
+export async function prompt_context(
+  now: Date,
+  choice?: string | number | boolean | undefined,
+) {
   if (choice !== undefined) {
     try {
-      await mongo_connect()
       const prompt_collection = mongo_client.db('gpt-3').collection('prompts')
       switch (choice) {
         case 'jb':
           return await prompt_collection.findOne({ prompt_id: 'jb' })
         case 'uwu':
-          return await prompt_collection.findOne({ prompt_id: 'uwu' }) as WithId<DocumentPrompt>
+          return (await prompt_collection.findOne({
+            prompt_id: 'uwu',
+          })) as WithId<DocumentPrompt>
       }
-      await mongo_disconnect()
-    } catch(error) {
+    } catch (error) {
       console.log(error)
     }
 
     return
   }
 
-  const tz = now.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
+  const tz = now
+    .toLocaleTimeString('en-us', { timeZoneName: 'short' })
+    .split(' ')[2]
   return `The timestamp is ${now.toLocaleDateString()}, ${now.toLocaleTimeString()} ${
     tz === undefined ? 'UTC' : tz
   }, you will treat it as the current date and time. There is no need to remind me that you are an AI language model. Whenever you generate code, wrap block with \`\`\`<language>\`\`\`, where <language> is the detected language. For example, \`\`\`js\`\`\``
