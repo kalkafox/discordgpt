@@ -72,23 +72,34 @@ export async function update_message(
 ) {
   try {
     await mongo_connect()
+    console.log('this happened -1')
     const db = mongo_client.db('gpt-3')
     const messages_db = db.collection('messages')
-    await messages_db.updateOne(
-      {
-        message_id: old_message_id,
-      },
-      {
-        $push: {
-          messages: {
-            $each: messages,
+    const document = (await messages_db.findOne({
+      message_id: old_message_id,
+    })) as WithId<DocumentMessage> | null
+
+    const messages = document?.messages ?? []
+
+    messages.push(...messages)
+
+    console.log(messages)
+
+    if (document) {
+      console.log('this happened')
+      await messages_db.updateOne(
+        {
+          message_id: old_message_id,
+        },
+        {
+          $set: {
+            messages,
+            message_id: new_message_id,
           },
         },
-        $set: {
-          message_id: new_message_id,
-        },
-      },
-    )
+      )
+    }
+
     await mongo_disconnect()
   } catch (error) {
     console.log(error)
@@ -159,8 +170,10 @@ export async function chat_completion(
   )
 }
 
-export async function prompt_context(now: Date, choice?: string | number | boolean | undefined) {
-
+export async function prompt_context(
+  now: Date,
+  choice?: string | number | boolean | undefined,
+) {
   if (choice !== undefined) {
     try {
       await mongo_connect()
@@ -169,17 +182,21 @@ export async function prompt_context(now: Date, choice?: string | number | boole
         case 'jb':
           return await prompt_collection.findOne({ prompt_id: 'jb' })
         case 'uwu':
-          return await prompt_collection.findOne({ prompt_id: 'uwu' }) as WithId<DocumentPrompt>
+          return (await prompt_collection.findOne({
+            prompt_id: 'uwu',
+          })) as WithId<DocumentPrompt>
       }
       await mongo_disconnect()
-    } catch(error) {
+    } catch (error) {
       console.log(error)
     }
 
     return
   }
 
-  const tz = now.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
+  const tz = now
+    .toLocaleTimeString('en-us', { timeZoneName: 'short' })
+    .split(' ')[2]
   return `The timestamp is ${now.toLocaleDateString()}, ${now.toLocaleTimeString()} ${
     tz === undefined ? 'UTC' : tz
   }, you will treat it as the current date and time. There is no need to remind me that you are an AI language model. Whenever you generate code, wrap block with \`\`\`<language>\`\`\`, where <language> is the detected language. For example, \`\`\`js\`\`\``

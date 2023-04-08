@@ -85,9 +85,8 @@ discord_client.on(Events.MessageCreate, async msg => {
 
       new Promise(async resolve => {
         while (processing) {
-          await new Promise(resolve => setTimeout(resolve, 5000))
-          if (!processing) return
           await reply.channel.sendTyping()
+          await new Promise(resolve => setTimeout(resolve, 5000))
         }
         resolve(true)
       })
@@ -120,7 +119,7 @@ discord_client.on(Events.MessageCreate, async msg => {
 
       processing = false
 
-      delete_reply(reply.id)
+      await delete_reply(reply.id)
 
       update_message(
         reply.id,
@@ -274,8 +273,6 @@ export async function execute(interaction: Interaction<CacheType>) {
     embeds: [token_embed(now, token_data)],
   })
 
-  await interaction.channel?.sendTyping()
-
   const messages: ChatCompletionRequestMessage[] = [
     {
       role: 'user',
@@ -368,7 +365,6 @@ export async function execute(interaction: Interaction<CacheType>) {
             content: message_content,
             embeds: [token_embed(now, token_data)],
           })
-          await interaction.channel?.sendTyping()
         }
 
         lines.forEach(async line => {
