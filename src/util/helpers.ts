@@ -72,28 +72,24 @@ export async function update_message(
 ) {
   try {
     await mongo_connect()
-    console.log('this happened -1')
     const db = mongo_client.db('gpt-3')
     const messages_db = db.collection('messages')
     const document = (await messages_db.findOne({
       message_id: old_message_id,
     })) as WithId<DocumentMessage> | null
 
-    const messages = document?.messages ?? []
-
-    messages.push(...messages)
-
-    console.log(messages)
-
     if (document) {
-      console.log('this happened')
       await messages_db.updateOne(
         {
           message_id: old_message_id,
         },
         {
+          $push: {
+            messages: {
+              $each: messages,
+            },
+          },
           $set: {
-            messages,
             message_id: new_message_id,
           },
         },
